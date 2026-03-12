@@ -21,6 +21,7 @@ TOOL_USE_MAX_ITERATIONS = 10
 
 API_BASE_URL = "https://stream-api-qa.iltech.in"
 HOTEL_STATIC_BASE_URL = "https://fast-api-qa.iltech.in"
+HOTEL_SERVICE_BASE_URL = "https://hotel-qa.iltech.in"
 USER_AGENT = "Itilite-TravelAssistant/1.0"
 REQUEST_TIMEOUT = 30.0
 
@@ -28,7 +29,7 @@ ENDPOINTS = {
     "itinerary": "/api/v1/dashboard/itinerary/{trip_id}",
     "hotel_room_details": "/v1/hotel-room-details",
     "trips": "/trips",
-    "hotel_cancel": "/hotels/{booking_id}/cancel",
+    "hotel_cancel": "/service/hotel/cancel/hotel-cancellation",
     "hotel_modify": "/hotels/{booking_id}/modify",
     "hotel_static": "/hotels/{hotel_id}",
 }

@@ -1,6 +1,6 @@
 import logging
 
-from app.config import API_BASE_URL, ENDPOINTS
+from app.config import API_BASE_URL, HOTEL_SERVICE_BASE_URL, ENDPOINTS
 from app.services import make_get_request, make_post_request, make_put_request
 
 logger = logging.getLogger(__name__)
@@ -22,25 +22,85 @@ async def get_hotel_details(hotel_id: str) -> str:
     return str(data)
 
 
-async def cancel_hotel_booking(booking_id: str, reason: str = "") -> str:
+async def cancel_hotel_booking(leg_request_id: str, auth_token: str) -> str:
     """Cancel a hotel booking.
 
-    Args:
-        booking_id: The booking ID to cancel (e.g. "BKG789")
-        reason: Optional reason for cancellation
-    """
-    endpoint = ENDPOINTS["hotel_cancel"].format(booking_id=booking_id)
-    url = f"{API_BASE_URL}{endpoint}"
-    payload: dict = {"booking_id": booking_id}
-    if reason:
-        payload["reason"] = reason
+    IMPORTANT — always follow this sequence:
+    1. Call get_trip_itinerary to retrieve the itinerary.
+    2. Show the user the cancellation policy and any charges.
+    3. Get explicit user confirmation before cancelling.
+    4. Pass the leg_request_id shown in the itinerary to this tool.
 
-    data = await make_post_request(url, payload)
+    The leg_request_id is a 24-character hex string shown in the itinerary
+    as "Leg Request ID (use for cancel)".
+    It looks like "69550d32aa90f845ff7e527f".
+
+    DO NOT pass booking_id (e.g. "10019492491") — that is a different field
+    labelled "Ref Booking ID" and will cause the cancellation to fail.
+
+    Args:
+        leg_request_id: 24-char hex leg request ID from the itinerary
+            (hotels.legs[].leg_request_id). Example: "69550d32aa90f845ff7e527f"
+        auth_token: Bearer token for authentication
+    """
+    url = f"{HOTEL_SERVICE_BASE_URL}{ENDPOINTS['hotel_cancel']}"
+    headers = {"authorization": f"Bearer {auth_token}"}
+    payload = {"legRequestIds": [leg_request_id]}
+
+    data = await make_post_request(url, payload, headers=headers)
 
     if not data:
-        return f"Unable to process cancellation for booking '{booking_id}'."
+        return (
+            f"❌ Cancellation request failed for leg '{leg_request_id}'."
+            " Please try again or contact support."
+        )
 
-    return str(data)
+    if data.get("success"):
+        inner = data.get("data", {})
+        msg = inner.get("message", "")
+        success_count = inner.get("successCount", 1)
+        failure_count = inner.get("failureCount", 0)
+        lines = [
+            "✅ Hotel booking cancelled successfully.",
+            f"   Leg Request ID : {leg_request_id}",
+        ]
+        if msg:
+            lines.append(f"   Message        : {msg}")
+        lines.append(
+            f"   Cancellations  : {success_count} succeeded,"
+            f" {failure_count} failed"
+        )
+        for result in inner.get("successResults", []):
+            detail_parts = [
+                p for p in [
+                    result.get("roomId", ""),
+                    result.get("message", ""),
+                ]
+                if p
+            ]
+            if detail_parts:
+                lines.append(f"   Detail         : {' — '.join(detail_parts)}")
+        ts = inner.get("timestamp") or data.get("timestamp", "")
+        if ts:
+            lines.append(f"   Timestamp      : {ts}")
+        lines.append(
+            "\n   Please allow a few minutes for the cancellation"
+            " to reflect in your trip."
+        )
+        return "\n".join(lines)
+
+    # Surface the error from the API
+    inner = data.get("data", {})
+    fail_results = inner.get("failureResults", [])
+    reason = (
+        fail_results[0].get("message", "")
+        if fail_results
+        else data.get("message", "Unknown error")
+    )
+    return (
+        f"❌ Hotel cancellation failed for leg '{leg_request_id}'.\n"
+        f"   Reason: {reason}"
+    )
 
 
 async def modify_hotel_booking(

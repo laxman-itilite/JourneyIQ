@@ -1,44 +1,47 @@
 import asyncio
 import logging
 
-from app.config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
-import app.config as _config
-from app.services import make_get_request, make_post_request
+from mcp.server.fastmcp import FastMCP
+
+from config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
+from services import make_get_request, make_post_request
 
 logger = logging.getLogger(__name__)
 
 
-async def get_trip_itinerary(trip_id: str, auth_token: str = "") -> str:
-    """Get the full itinerary for a specific trip including hotel,
-    flight, fare, traveller details, amenities, descriptions
-    and room photos.
+def register_itinerary_tools(mcp: FastMCP) -> None:
+    """Register all itinerary-related tools."""
 
-    Args:
-        trip_id: The unique trip identifier (e.g. "0600-0621")
-        auth_token: Bearer token for authentication
-    """
-    if not auth_token:
-        auth_token = _config.get_user_access_token()
-    endpoint = ENDPOINTS["itinerary"].format(trip_id=trip_id)
-    url = f"{API_BASE_URL}{endpoint}"
-    headers = {"authorization": f"Bearer {auth_token}"}
-    response = await make_get_request(url, headers=headers)
+    @mcp.tool()
+    async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
+        """Get the full itinerary for a specific trip including hotel,
+        flight, fare, traveller details, amenities, descriptions
+        and room photos.
 
-    if not response or response.get("status_code") != 200:
-        return f"Unable to fetch itinerary for trip '{trip_id}'."
+        Args:
+            trip_id: The unique trip identifier (e.g. "0600-0621")
+            auth_token: Bearer token for authentication
+        """
+        endpoint = ENDPOINTS["itinerary"].format(trip_id=trip_id)
+        url = f"{API_BASE_URL}{endpoint}"
+        headers = {"authorization": f"Bearer {auth_token}"}
+        response = await make_get_request(url, headers=headers)
 
-    data = response.get("data", {})
+        if not response or response.get("status_code") != 200:
+            return f"Unable to fetch itinerary for trip '{trip_id}'."
 
-    # ── Enrich hotel legs with static data (parallel) ─────────────────
-    hotel_legs = data.get("hotels", {}).get("legs", [])
-    if hotel_legs:
-        static_results = await _fetch_all_hotel_static(
-            hotel_legs, auth_token
-        )
-        for leg, static in zip(hotel_legs, static_results):
-            leg["_static"] = static  # None if fetch failed
+        data = response.get("data", {})
 
-    return _format_itinerary(data)
+        # ── Enrich hotel legs with static data (parallel) ─────────────────
+        hotel_legs = data.get("hotels", {}).get("legs", [])
+        if hotel_legs:
+            static_results = await _fetch_all_hotel_static(
+                hotel_legs, auth_token
+            )
+            for leg, static in zip(hotel_legs, static_results):
+                leg["_static"] = static  # None if fetch failed
+
+        return _format_itinerary(data)
 
 
 async def _fetch_all_hotel_static(
@@ -406,10 +409,8 @@ def _format_hotel_leg(i: int, leg: dict, trip_currency: str) -> list[str]:
     star_str = f" ({'⭐' * int(float(stars))})" if stars else ""
     lines += [
         f"   [{i}] {h.get('name', 'N/A')}{star_str}",
-        "       Leg Request ID (use for cancel): "
-        f"{leg.get('leg_request_id', 'N/A')}",
-        "       Ref Booking ID (do NOT use for cancel): "
-        f"{leg.get('booking_id', 'N/A')}",
+        f"       Leg Request ID: {leg.get('leg_request_id', 'N/A')}",
+        f"       Booking ID   : {leg.get('booking_id', 'N/A')}",
         f"       Status       : {leg.get('status', 'N/A')}",
         f"       Vendor       : {leg.get('vendor', 'N/A')}",
     ]
