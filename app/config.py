@@ -30,6 +30,9 @@ ENDPOINTS = {
     "itinerary": "/api/v1/dashboard/itinerary/{trip_id}",
     "hotel_room_details": "/v1/hotel-room-details",
     "trips": "/trips",
+    "upcoming_trips": (
+        "/api/v1/traveler/dashboard/business/itinerary/upcoming"
+    ),
     "hotel_cancel": "/service/hotel/cancel/hotel-cancellation",
     "hotel_modify": "/hotels/{booking_id}/modify",
     "hotel_static": "/hotels/{hotel_id}",

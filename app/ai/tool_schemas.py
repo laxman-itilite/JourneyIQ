@@ -2,6 +2,27 @@
 
 TOOL_SCHEMAS: list[dict] = [
     {
+        "name": "get_upcoming_trips",
+        "description": (
+            "Fetch the user's upcoming trips (up to 10, sorted by "
+            "journey date asc). "
+            "Call this whenever the user asks about their trips without "
+            "providing a trip_id — e.g. 'what trips do I have?', "
+            "'cancel today's hotel', 'show me tomorrow's trip', "
+            "'what's my next flight?'. "
+            "Returns a summary table with trip_id, title, dates "
+            "(with today/tomorrow labels), status, destination, and "
+            "booking types. "
+            "After showing the list, call get_trip_itinerary on the "
+            "relevant trip_id before taking any action."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
         "name": "get_trip_itinerary",
         "description": "Get the full itinerary for a specific trip including flights, hotels, fare breakdown, and traveller details.",
         "input_schema": {
