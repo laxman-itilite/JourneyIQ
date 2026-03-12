@@ -11,12 +11,8 @@ TOOL_SCHEMAS: list[dict] = [
                     "type": "string",
                     "description": "The trip ID (e.g. '0600-0621').",
                 },
-                "auth_token": {
-                    "type": "string",
-                    "description": "Bearer token for authenticating the request.",
-                },
             },
-            "required": ["trip_id", "auth_token"],
+            "required": ["trip_id"],
         },
     },
     {

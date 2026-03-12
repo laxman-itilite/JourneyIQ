@@ -1,13 +1,13 @@
 import asyncio
 import logging
 
-from app.config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
+from app.config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS, USER_ACCESS_TOKEN
 from app.services import make_get_request, make_post_request
 
 logger = logging.getLogger(__name__)
 
 
-async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
+async def get_trip_itinerary(trip_id: str, auth_token: str = USER_ACCESS_TOKEN) -> str:
     """Get the full itinerary for a specific trip including hotel,
     flight, fare, traveller details, amenities, descriptions
     and room photos.
