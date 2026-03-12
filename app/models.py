@@ -1,6 +1,13 @@
 from pydantic import BaseModel
-from typing import Literal
+from typing import Any, Literal
 from datetime import datetime, timezone
+
+
+class ToolCall(BaseModel):
+    id: str
+    name: str
+    input: dict[str, Any]
+    output: str | None = None
 
 
 class Message(BaseModel):
@@ -9,6 +16,7 @@ class Message(BaseModel):
     role: Literal["user", "assistant"]
     content: str
     timestamp: str = ""
+    tool_calls: list[ToolCall] = []
 
     def model_post_init(self, __context):
         if not self.timestamp:

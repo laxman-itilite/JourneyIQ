@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "MCP Dev Server (JourneyIQ)",
+      "name": "MCP Dev Server (itilite)",
       "runtimeExecutable": "mcp",
-      "runtimeArgs": ["dev", "JourneyIQ.py"],
+      "runtimeArgs": ["dev", "mcp/server.py"],
       "port": 6274
     }
   ]

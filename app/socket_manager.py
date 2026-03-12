@@ -96,8 +96,5 @@ async def send_message(sid: str, data: dict):
 
 
 async def generate_reply(session: Session) -> str:
-    """Placeholder AI reply — swap in your LLM integration here."""
-    last_user = next(
-        (m.content for m in reversed(session.messages) if m.role == "user"), ""
-    )
-    return f"Echo: {last_user}"
+    from app.ai.client import chat_turn
+    return await chat_turn(session)

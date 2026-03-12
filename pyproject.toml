@@ -1,7 +1,7 @@
 [project]
 name = "journeyiq"
 version = "0.1.0"
-description = "Add your description here"
+description = "Itilite JourneyIQ — AI-powered corporate travel chat backend"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -11,4 +11,7 @@ dependencies = [
     "python-socketio>=5.11.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.0.0",
+    "anthropic>=0.40.0",
+    "python-dotenv>=1.0.0",
+    "aiohttp>=3.13.3",
 ]

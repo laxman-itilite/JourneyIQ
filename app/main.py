@@ -2,7 +2,7 @@ import socketio
 from fastapi import FastAPI
 from .socket_manager import sio
 
-fastapi_app = FastAPI(title="JourneyIQ Chat API")
+fastapi_app = FastAPI(title="Itilite Chatbot API")
 
 
 @fastapi_app.get("/health")
