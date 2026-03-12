@@ -413,6 +413,27 @@ def _format_hotel_leg(i: int, leg: dict, trip_currency: str) -> list[str]:
         f"       Room         : {room.get('name', 'N/A')}",
     ]
 
+    # ── Inclusions ───────────────────────────────────────────────────────────
+    # Property-level inclusions (plain strings)
+    prop_inc = h.get("inclusions", [])
+    if prop_inc and isinstance(prop_inc[0], str):
+        lines.append(
+            f"       Property Inc : {', '.join(prop_inc)}"
+        )
+    # Room-level inclusions (list of {id, name} objects)
+    room_inc = room.get("inclusions", [])
+    if room_inc:
+        inc_names = [
+            x.get("name", "")
+            for x in room_inc
+            if isinstance(x, dict) and x.get("name")
+        ]
+        if inc_names:
+            # Show as a wrapped comma-separated list
+            lines.append(
+                f"       Room Inc     : {', '.join(inc_names)}"
+            )
+
     # ── Meals ────────────────────────────────────────────────────────────────
     breakfast = "✅" if room.get("breakfast") else "❌"
     lunch = "✅" if room.get("lunch") else "❌"
