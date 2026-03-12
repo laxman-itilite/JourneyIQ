@@ -16,14 +16,15 @@ MANIFEST
 venv/
 env/
 
-# uv
-.python-version          # machine-specific; don't force Python version on others
-uv.lock                  # commit this if you want reproducible installs, remove line if so
+# uv — machine-specific python version; commit uv.lock if you want reproducible installs
+.python-version
+uv.lock
 
 # ── Environment / secrets ─────────────────────────────────────────────────────
-.env                     # ANTHROPIC_API_KEY and other secrets — never commit
-.env.*                   # .env.local, .env.production, etc.
-!.env.example            # keep the example template in git
+# ANTHROPIC_API_KEY and other secrets — never commit
+.env
+.env.*
+!.env.example
 
 # ── IDE / editors ─────────────────────────────────────────────────────────────
 .vscode/
