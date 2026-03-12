@@ -7,12 +7,12 @@ from app.services import make_get_request
 
 logger = logging.getLogger(__name__)
 
-_MAX_TRIPS = 10
-_PAGE_SIZE = 5
+_MAX_TRIPS = 20
+_PAGE_SIZE = 3
 
 
 async def get_upcoming_trips() -> str:
-    """Fetch the user's upcoming trips (up to 10, sorted by journey date).
+    """Fetch the user's upcoming trips (up to 20, sorted by journey date).
 
     Call this tool whenever the user asks about their trips without
     providing a specific trip_id — for example:
