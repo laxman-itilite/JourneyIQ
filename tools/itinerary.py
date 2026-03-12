@@ -98,11 +98,24 @@ def _format_itinerary(data: dict) -> str:
         lines += ["", f"   {'─' * 44}"]
         lines += _format_hotel_leg(i, leg, currency)
 
-    # ── Cars / Trains / Buses ────────────────────────────────────────────────
-    for mode, icon in [("cars", "🚗"), ("trains", "🚆"), ("buses", "🚌")]:
-        count = data.get(mode, {}).get("count", 0)
-        if count > 0:
-            lines += ["", f"{icon} {mode.upper()}: {count} booking(s)"]
+    # ── Cars ─────────────────────────────────────────────────────────────────
+    cars = data.get("cars", {})
+    car_legs = cars.get("legs", [])
+    if cars.get("count", 0) > 0:
+        lines += ["", f"� CARS ({cars['count']})"]
+        for i, leg in enumerate(car_legs, 1):
+            lines += ["", f"   {'─' * 44}"]
+            lines += _format_car_leg(i, leg)
+
+    # ── Trains ───────────────────────────────────────────────────────────────
+    trains = data.get("trains", {})
+    if trains.get("count", 0) > 0:
+        lines += ["", f"🚆 TRAINS: {trains['count']} booking(s)"]
+
+    # ── Buses ────────────────────────────────────────────────────────────────
+    buses = data.get("buses", {})
+    if buses.get("count", 0) > 0:
+        lines += ["", f"🚌 BUSES: {buses['count']} booking(s)"]
 
     # ── Charge Summary ───────────────────────────────────────────────────────
     charge = data.get("charge_summary", {})
@@ -238,6 +251,97 @@ def _format_flight_leg(i: int, leg: dict) -> list[str]:
     # ── Voucher ──────────────────────────────────────────────────────────────
     if leg.get("voucher_link"):
         lines.append(f"       Voucher      : {leg['voucher_link']}")
+
+    return lines
+
+
+def _format_car_leg(i: int, leg: dict) -> list[str]:
+    lines: list[str] = []
+    car = leg.get("car_details", {})
+    pickup = leg.get("pickup", {})
+    dropoff = leg.get("dropoff", {})
+    fare = leg.get("fare", {})
+    c = fare.get("currency", "USD")
+
+    # ── Basic Info ───────────────────────────────────────────────────────────
+    lines += [
+        f"   [{i}] {car.get('vendor_name', 'N/A')}"
+        f"  — {car.get('model_name', 'N/A')}",
+        f"       Status       : {leg.get('status', 'N/A')}",
+        f"       PNR          : {leg.get('pnr', 'N/A')}",
+        f"       CSR PNR      : {leg.get('csr_pnr', 'N/A')}",
+        f"       Trip Type    : {leg.get('trip_type', 'N/A')}",
+        f"       Subtype      :"
+        f" {leg.get('subtype_display_name', 'N/A')}",
+    ]
+
+    # ── Vehicle Details ──────────────────────────────────────────────────────
+    ac = "Yes" if car.get("air_condition") else "No"
+    lines += [
+        f"       Class        : {car.get('class', 'N/A')}",
+        f"       Vehicle Type : {car.get('vehicle_type', 'N/A')}",
+        f"       Doors        : {car.get('door_count', 'N/A')}",
+        f"       Passengers   : {car.get('paxct', 'N/A')}",
+        f"       Luggage      : {car.get('baggage_count', 'N/A')} bag(s)",
+        f"       A/C          : {ac}",
+        f"       Rate Type    : {car.get('rate_type_text', 'N/A')}",
+        f"       Rate/Period  :"
+        f" {c} {car.get('rate_for_period', 0):.2f}"
+        f" ({car.get('rate_period', 'N/A')})",
+        f"       Total Days   : {car.get('total_days', 'N/A')}",
+    ]
+    if car.get("discount_number"):
+        lines.append(
+            f"       Discount #   : {car['discount_number']}"
+        )
+
+    # ── Pickup & Dropoff ─────────────────────────────────────────────────────
+    lines += [
+        f"       Pick-up      : {pickup.get('location', 'N/A')}"
+        f" ({pickup.get('type', '')})"
+        f" @ {pickup.get('datetime', 'N/A')}",
+        f"       Drop-off     : {dropoff.get('location', 'N/A')}"
+        f" ({dropoff.get('type', '')})"
+        f" @ {dropoff.get('datetime', 'N/A')}",
+    ]
+
+    # ── Location / Map ───────────────────────────────────────────────────────
+    lat = car.get("latitude")
+    lon = car.get("longitude")
+    if lat and lon:
+        maps_url = f"https://maps.google.com/?q={lat},{lon}"
+        lines += [
+            f"       Location     : {lat}, {lon}",
+            f"       Maps         : {maps_url}",
+        ]
+
+    # ── Fare ─────────────────────────────────────────────────────────────────
+    total = fare.get("total_price", 0) or 0
+    base = fare.get("base_price", 0) or 0
+    tax = fare.get("tax", 0) or 0
+    lines.append(
+        f"       Fare         : {c} {total:.2f}"
+        f"  (base: {base:.2f}, tax: {tax:.2f})"
+    )
+
+    # ── Policy ───────────────────────────────────────────────────────────────
+    if car.get("out_of_policy"):
+        reason = car.get("out_of_policy_reason") or "N/A"
+        lines.append(f"       ⚠️  Policy    : Out of policy — {reason}")
+
+    # ── Key Instructions ─────────────────────────────────────────────────────
+    instructions = car.get("instructions", [])
+    if instructions:
+        lines.append("       Instructions :")
+        for ins in instructions:
+            name = ins.get("name", "")
+            lines.append(f"         • {name}")
+
+    # ── Voucher ──────────────────────────────────────────────────────────────
+    if leg.get("voucher_link"):
+        lines.append(
+            f"       Voucher      : {leg['voucher_link']}"
+        )
 
     return lines
 
