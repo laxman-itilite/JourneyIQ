@@ -314,6 +314,10 @@ def _format_car_leg(i: int, leg: dict) -> list[str]:
         f"   [{i}] {car.get('vendor_name', 'N/A')}"
         f"  — {car.get('model_name', 'N/A')}",
         f"       Status       : {leg.get('status', 'N/A')}",
+        "       Service Master ID (use for cancel): "
+        f"{leg.get('service_master_id', 'N/A')}",
+        "       Car ID (use for cancel): "
+        f"{leg.get('car_id', 'N/A')}",
         f"       PNR          : {leg.get('pnr', 'N/A')}",
         f"       CSR PNR      : {leg.get('csr_pnr', 'N/A')}",
         f"       Trip Type    : {leg.get('trip_type', 'N/A')}",

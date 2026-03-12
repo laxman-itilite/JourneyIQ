@@ -1,5 +1,6 @@
 import logging
 
+import app.config as _config
 from app.config import API_BASE_URL, HOTEL_SERVICE_BASE_URL, ENDPOINTS
 from app.services import make_get_request, make_post_request, make_put_request
 
@@ -22,7 +23,7 @@ async def get_hotel_details(hotel_id: str) -> str:
     return str(data)
 
 
-async def cancel_hotel_booking(leg_request_id: str, auth_token: str) -> str:
+async def cancel_hotel_booking(leg_request_id: str) -> str:
     """Cancel a hotel booking.
 
     IMPORTANT — always follow this sequence:
@@ -41,8 +42,8 @@ async def cancel_hotel_booking(leg_request_id: str, auth_token: str) -> str:
     Args:
         leg_request_id: 24-char hex leg request ID from the itinerary
             (hotels.legs[].leg_request_id). Example: "69550d32aa90f845ff7e527f"
-        auth_token: Bearer token for authentication
     """
+    auth_token = _config.get_user_access_token()
     url = f"{HOTEL_SERVICE_BASE_URL}{ENDPOINTS['hotel_cancel']}"
     headers = {"authorization": f"Bearer {auth_token}"}
     payload = {"legRequestIds": [leg_request_id]}
@@ -137,4 +138,3 @@ async def modify_hotel_booking(
         return f"Unable to process modification for booking '{booking_id}'."
 
     return str(data)
-
