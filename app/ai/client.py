@@ -4,6 +4,7 @@ Entry point: chat_turn(session) — runs one full user turn, executing any
 tool calls Claude requests, and returns a structured response dict.
 """
 import json
+import re
 import anthropic
 
 from app.config import get_anthropic_api_key, CLAUDE_MODEL, CLAUDE_MAX_TOKENS, TOOL_USE_MAX_ITERATIONS
@@ -41,30 +42,72 @@ def _build_messages(session) -> list[dict]:
 def _parse_response(raw_text: str) -> dict:
     """Parse Claude's JSON response envelope.
 
-    Claude is instructed to always reply with a JSON object. This function
-    extracts the JSON (stripping any accidental markdown fences), then
-    validates the expected fields. Falls back gracefully if parsing fails.
+    Claude is instructed to reply with a raw JSON object. This function
+    handles several failure modes:
+    1. Clean JSON (ideal) — parse directly.
+    2. JSON wrapped in ```json fences — strip fences first.
+    3. Plain text followed by a JSON code block — extract the JSON block.
+    4. Plain text with no JSON — wrap as a paragraph fallback.
 
     Returns a dict with keys: content, buttons, connect_to_human.
     """
     text = raw_text.strip()
-    # Strip ```json ... ``` fences if Claude wraps the JSON
+
+    # Attempt 1: parse the whole response as JSON
+    data = _try_parse_json(text)
+    if data is not None:
+        return _extract_fields(data, raw_text)
+
+    # Attempt 2: strip ```json ... ``` fences
     if text.startswith("```"):
-        lines = text.splitlines()
-        # Remove first and last fence lines
-        inner = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-        text = inner.strip()
+        inner = _strip_fences(text)
+        data = _try_parse_json(inner)
+        if data is not None:
+            return _extract_fields(data, raw_text)
 
+    # Attempt 3: find a JSON code block anywhere in the response
+    # (handles: plain text + ```json { ... } ```)
+    fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if fence_match:
+        data = _try_parse_json(fence_match.group(1))
+        if data is not None:
+            return _extract_fields(data, raw_text)
+
+    # Attempt 4: find the last top-level { ... } in the response
+    last_brace = text.rfind("{")
+    if last_brace != -1:
+        candidate = text[last_brace:]
+        data = _try_parse_json(candidate)
+        if data is not None:
+            return _extract_fields(data, raw_text)
+
+    # Fallback: plain text, no JSON found
+    return {
+        "content": raw_text,
+        "buttons": [],
+        "connect_to_human": False,
+    }
+
+
+def _try_parse_json(text: str) -> dict | None:
+    """Try to parse text as JSON, return dict or None."""
     try:
-        data = json.loads(text)
+        data = json.loads(text.strip())
+        return data if isinstance(data, dict) else None
     except (json.JSONDecodeError, ValueError):
-        # Claude replied with plain text instead of JSON — wrap it
-        return {
-            "content": raw_text,
-            "buttons": [],
-            "connect_to_human": False,
-        }
+        return None
 
+
+def _strip_fences(text: str) -> str:
+    """Remove markdown code fences from around content."""
+    lines = text.splitlines()
+    if lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+    return "\n".join(lines[1:]).strip()
+
+
+def _extract_fields(data: dict, raw_text: str) -> dict:
+    """Pull the expected fields from a parsed JSON dict."""
     return {
         "content": data.get("content", raw_text),
         "buttons": data.get("buttons") or [],
