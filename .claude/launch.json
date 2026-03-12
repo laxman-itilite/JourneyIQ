@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "MCP Dev Server (JourneyIQ)",
+      "runtimeExecutable": "mcp",
+      "runtimeArgs": ["dev", "JourneyIQ.py"],
+      "port": 6274
+    }
+  ]
+}
