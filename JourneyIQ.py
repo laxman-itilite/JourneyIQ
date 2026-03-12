@@ -4,7 +4,7 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 
 # Initialize FastMCP server
-mcp = FastMCP("weather")
+mcp = FastMCP("JourneyIQ")
 
 # Constants
 NWS_API_BASE = "https://api.weather.gov"
@@ -13,7 +13,6 @@ USER_AGENT = "weather-app/1.0"
 import sys
 import logging
 
-sys.stdout = sys.stderr  # Redirect stdout → stderr to protect JSON-RPC stream
 logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
 
 async def make_nws_request(url: str) -> dict[str, Any] | None:
