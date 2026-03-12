@@ -18,7 +18,7 @@ _response_ready = asyncio.Event()
 
 @sio.event
 async def connect():
-    print("Connected to JourneyIQ chat server.")
+    print("Connected to Itilite Travel Assistant.")
     _ns_ready.set()
 
 

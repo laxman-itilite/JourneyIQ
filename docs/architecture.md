@@ -1,4 +1,4 @@
-# JourneyIQ — Architecture & End-to-End Working
+# Itilite Travel Assistant — Architecture & End-to-End Working
 
 ## Bird's Eye View
 
@@ -17,7 +17,7 @@ Itilite Backend APIs  (stream-api-qa.iltech.in)
 ## Project Structure
 
 ```
-JourneyIQ/
+itilite-travel-assistant/
 ├── main.py                    # Uvicorn entry point (port 8000)
 ├── app/
 │   ├── main.py                # FastAPI + Socket.IO ASGI app

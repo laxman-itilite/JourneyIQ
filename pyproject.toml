@@ -1,7 +1,7 @@
 [project]
-name = "journeyiq"
+name = "itilite-travel-assistant"
 version = "0.1.0"
-description = "Itilite JourneyIQ — AI-powered corporate travel chat backend"
+description = "Itilite Travel Assistant — AI-powered corporate travel chat backend"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

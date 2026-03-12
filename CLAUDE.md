@@ -1,8 +1,8 @@
-# Itilite JourneyIQ — Developer PRD
+# Itilite Travel Assistant — Developer PRD
 
 ## What We're Building
 
-JourneyIQ is the AI-powered chat backend for the **Itilite corporate travel platform**.
+Itilite Travel Assistant is the AI-powered chat backend for the **Itilite corporate travel platform**.
 Employees interact via a real-time Socket.IO chat interface. An AI assistant (Claude claude-sonnet-4-6)
 handles their travel requests — querying trips, managing bookings, checking weather,
 and more — via a set of domain tools.

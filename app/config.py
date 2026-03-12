@@ -19,7 +19,7 @@ TOOL_USE_MAX_ITERATIONS = 10
 
 API_BASE_URL = "https://stream-api-qa.iltech.in"
 HOTEL_STATIC_BASE_URL = "https://fast-api-qa.iltech.in"
-USER_AGENT = "JourneyIQ-MCP/1.0"
+USER_AGENT = "Itilite-TravelAssistant/1.0"
 REQUEST_TIMEOUT = 30.0
 
 ENDPOINTS = {

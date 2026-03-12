@@ -1,4 +1,4 @@
-# JourneyIQ — Itilite AI Travel Assistant
+# Itilite Travel Assistant
 
 AI-powered chat backend for the [Itilite](https://www.itilite.com) corporate travel platform. Employees chat in real time and an AI assistant handles trip queries, bookings, cancellations, policy questions, and FAQs.
 
