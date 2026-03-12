@@ -1,35 +1,34 @@
 import logging
 
-from mcp.server.fastmcp import FastMCP
-
 from config import API_BASE_URL, ENDPOINTS
 from services import make_get_request
 
 logger = logging.getLogger(__name__)
 
 
-def register_itinerary_tools(mcp: FastMCP) -> None:
+async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
+    """Get the full itinerary for a specific trip including hotel,
+    flight, fare and traveller details.
+
+    Args:
+        trip_id: The unique trip identifier (e.g. "0600-0621")
+        auth_token: Bearer token for authentication
+    """
+    endpoint = ENDPOINTS["itinerary"].format(trip_id=trip_id)
+    url = f"{API_BASE_URL}{endpoint}"
+    headers = {"authorization": f"Bearer {auth_token}"}
+    response = await make_get_request(url, headers=headers)
+
+    if not response or response.get("status_code") != 200:
+        return f"Unable to fetch itinerary for trip '{trip_id}'."
+
+    data = response.get("data", {})
+    return _format_itinerary(data)
+
+
+def register_itinerary_tools(mcp) -> None:
     """Register all itinerary-related tools."""
-
-    @mcp.tool()
-    async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
-        """Get the full itinerary for a specific trip including hotel,
-        flight, fare and traveller details.
-
-        Args:
-            trip_id: The unique trip identifier (e.g. "0600-0621")
-            auth_token: Bearer token for authentication
-        """
-        endpoint = ENDPOINTS["itinerary"].format(trip_id=trip_id)
-        url = f"{API_BASE_URL}{endpoint}"
-        headers = {"authorization": f"Bearer {auth_token}"}
-        response = await make_get_request(url, headers=headers)
-
-        if not response or response.get("status_code") != 200:
-            return f"Unable to fetch itinerary for trip '{trip_id}'."
-
-        data = response.get("data", {})
-        return _format_itinerary(data)
+    mcp.tool()(get_trip_itinerary)
 
 
 def _format_itinerary(data: dict) -> str:
