@@ -46,20 +46,27 @@ TOOL_SCHEMAS: list[dict] = [
     },
     {
         "name": "cancel_hotel_booking",
-        "description": "Cancel a hotel booking.",
+        "description": (
+            "Cancel a hotel booking. "
+            "Always call get_trip_itinerary first and confirm with the user "
+            "before cancelling. "
+            "Pass the 'Leg Request ID (use for cancel)' from the itinerary — "
+            "do NOT pass the 'Ref Booking ID'."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "booking_id": {
+                "leg_request_id": {
                     "type": "string",
-                    "description": "The booking ID to cancel.",
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "Optional reason for cancellation.",
+                    "description": (
+                        "24-character hex leg request ID from the itinerary "
+                        "(hotels.legs[].leg_request_id). "
+                        "Example: '69550d32aa90f845ff7e527f'. "
+                        "Do NOT use booking_id here."
+                    ),
                 },
             },
-            "required": ["booking_id"],
+            "required": ["leg_request_id"],
         },
     },
     {
@@ -141,6 +148,36 @@ TOOL_SCHEMAS: list[dict] = [
                 },
             },
             "required": ["cancellation_request_id", "trip_id"],
+        },
+    },
+    {
+        "name": "cancel_car_booking",
+        "description": (
+            "Cancel a rental car booking. "
+            "Always call get_trip_itinerary first and confirm with the user "
+            "before cancelling. "
+            "Pass the 'Service Master ID (use for cancel)' and "
+            "'Car ID (use for cancel)' from the itinerary car leg."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "service_master_id": {
+                    "type": "integer",
+                    "description": (
+                        "Integer service master ID from the itinerary car leg "
+                        "(cars.legs[].service_master_id). Example: 100502."
+                    ),
+                },
+                "cab_id": {
+                    "type": "integer",
+                    "description": (
+                        "Integer car/cab ID from the itinerary car leg "
+                        "(cars.legs[].car_id). Example: 100807."
+                    ),
+                },
+            },
+            "required": ["service_master_id", "cab_id"],
         },
     },
 ]

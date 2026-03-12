@@ -12,6 +12,7 @@ from .flights import (
     submit_flight_cancellation,
     get_flight_cancellation_status,
 )
+from .car_rental import cancel_car_booking
 
 TOOL_REGISTRY: dict[str, Callable] = {
     "get_trip_itinerary": get_trip_itinerary,
@@ -22,6 +23,7 @@ TOOL_REGISTRY: dict[str, Callable] = {
     "get_flight_cancellation_details": get_flight_cancellation_details,
     "submit_flight_cancellation": submit_flight_cancellation,
     "get_flight_cancellation_status": get_flight_cancellation_status,
+    "cancel_car_booking": cancel_car_booking,
 }
 
 
