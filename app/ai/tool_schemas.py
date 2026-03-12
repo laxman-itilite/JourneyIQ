@@ -92,36 +92,4 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["booking_id"],
         },
     },
-    {
-        "name": "get_weather_alerts",
-        "description": "Get active weather alerts for a US state.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "state": {
-                    "type": "string",
-                    "description": "Two-letter US state code (e.g. CA, NY).",
-                },
-            },
-            "required": ["state"],
-        },
-    },
-    {
-        "name": "get_weather_forecast",
-        "description": "Get weather forecast for a location by latitude and longitude.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "latitude": {
-                    "type": "number",
-                    "description": "Latitude of the location.",
-                },
-                "longitude": {
-                    "type": "number",
-                    "description": "Longitude of the location.",
-                },
-            },
-            "required": ["latitude", "longitude"],
-        },
-    },
 ]

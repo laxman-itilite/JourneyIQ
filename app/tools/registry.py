@@ -7,7 +7,6 @@ from collections.abc import Callable
 from .itinerary import get_trip_itinerary
 from .trips import get_trips_by_user
 from .hotels import get_hotel_details, cancel_hotel_booking, modify_hotel_booking
-from .weather import get_weather_alerts, get_weather_forecast
 
 TOOL_REGISTRY: dict[str, Callable] = {
     "get_trip_itinerary": get_trip_itinerary,
@@ -15,8 +14,6 @@ TOOL_REGISTRY: dict[str, Callable] = {
     "get_hotel_details": get_hotel_details,
     "cancel_hotel_booking": cancel_hotel_booking,
     "modify_hotel_booking": modify_hotel_booking,
-    "get_weather_alerts": get_weather_alerts,
-    "get_weather_forecast": get_weather_forecast,
 }
 
 

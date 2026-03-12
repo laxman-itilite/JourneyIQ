@@ -4,7 +4,7 @@
 
 Itilite Travel Assistant is the AI-powered chat backend for the **Itilite corporate travel platform**.
 Employees interact via a real-time Socket.IO chat interface. An AI assistant (Claude claude-sonnet-4-6)
-handles their travel requests — querying trips, managing bookings, checking weather,
+handles their travel requests — querying trips, managing bookings,
 and more — via a set of domain tools.
 
 A parallel **FastMCP server** (`mcp_server/server.py`, named `"itilite"`) exposes the same tools
@@ -40,7 +40,7 @@ app/
 │   ├── itinerary.py     get_trip_itinerary
 │   ├── trips.py         get_trips_by_user
 │   ├── hotels.py        get_hotel_details, cancel_hotel_booking, modify_hotel_booking
-│   └── weather.py       get_weather_alerts, get_weather_forecast
+│   └── weather.py       (removed — not in use)
 ├── services/
 │   └── http_client.py   make_get_request, make_post_request, make_put_request
 ├── config.py            All settings — Anthropic API key, Claude model, Itilite API URLs
@@ -82,8 +82,6 @@ User message
 | `get_hotel_details` | hotels.py | Static details for a hotel |
 | `cancel_hotel_booking` | hotels.py | Cancel a hotel booking |
 | `modify_hotel_booking` | hotels.py | Modify dates, room type, or special requests |
-| `get_weather_alerts` | weather.py | Active NWS weather alerts for a US state |
-| `get_weather_forecast` | weather.py | 5-period weather forecast by lat/lon |
 
 ---
 
