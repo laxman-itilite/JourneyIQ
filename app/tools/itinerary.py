@@ -8,6 +8,14 @@ from app.services import make_get_request, make_post_request
 logger = logging.getLogger(__name__)
 
 
+def _client_id_from_trip(trip_id: str) -> str:
+    """Extract client ID from trip ID prefix. e.g. '0653-1241' → '653'."""
+    try:
+        return str(int(trip_id.split("-")[0]))
+    except (ValueError, IndexError):
+        return ""
+
+
 async def get_trip_itinerary(trip_id: str, auth_token: str = "") -> str:
     """Get the full itinerary for a specific trip including hotel,
     flight, fare, traveller details, amenities, descriptions
@@ -33,7 +41,7 @@ async def get_trip_itinerary(trip_id: str, auth_token: str = "") -> str:
     hotel_legs = data.get("hotels", {}).get("legs", [])
     if hotel_legs:
         static_results = await _fetch_all_hotel_static(
-            hotel_legs, auth_token
+            hotel_legs, auth_token, trip_id
         )
         for leg, static in zip(hotel_legs, static_results):
             leg["_static"] = static  # None if fetch failed
@@ -42,13 +50,15 @@ async def get_trip_itinerary(trip_id: str, auth_token: str = "") -> str:
 
 
 async def _fetch_all_hotel_static(
-    legs: list, auth_token: str
+    legs: list, auth_token: str, trip_id: str = ""
 ) -> list[dict | None]:
     """Fetch static hotel details for all legs concurrently."""
     url = f"{HOTEL_STATIC_BASE_URL}{ENDPOINTS['hotel_room_details']}"
+    client_id = _client_id_from_trip(trip_id) if trip_id else ""
     headers = {
-        "authorization": f"Bearer {auth_token}",
-        "content-type": "application/json",
+        "Authorization": f"Bearer {auth_token}",
+        "role": "traveler",
+        **({"client-id": client_id} if client_id else {}),
     }
 
     async def _fetch_one(leg: dict) -> dict | None:

@@ -1,26 +1,169 @@
 import logging
 
 import app.config as _config
-from app.config import API_BASE_URL, HOTEL_SERVICE_BASE_URL, ENDPOINTS
-from app.services import make_get_request, make_post_request, make_put_request
+from app.config import (
+    HOTEL_STATIC_BASE_URL,
+    HOTEL_SERVICE_BASE_URL,
+    API_BASE_URL,
+    ENDPOINTS,
+)
+from app.services import make_post_request, make_put_request
 
 logger = logging.getLogger(__name__)
 
 
-async def get_hotel_details(hotel_id: str) -> str:
-    """Get static details for a hotel.
+def _client_id_from_trip(trip_id: str) -> str:
+    """Extract client ID from trip ID prefix. e.g. '0653-1241' → '653'."""
+    try:
+        return str(int(trip_id.split("-")[0]))
+    except (ValueError, IndexError):
+        return ""
+
+
+async def get_hotel_details(
+    leg_request_id: str,
+    hotel_unique_id: str,
+    room_id: str = "",
+    auth_token: str = "",
+    trip_id: str = "",
+) -> str:
+    """Get static details for a booked hotel — amenities, description,
+    room features, and photos.
+
+    Both leg_request_id and hotel_unique_id are shown in the itinerary
+    under each hotel leg. Call get_trip_itinerary first if you don't
+    have them.
 
     Args:
-        hotel_id: The unique identifier for the hotel (e.g. "HTL456")
+        leg_request_id: 24-char hex leg request ID from the itinerary
+            (hotels.legs[].leg_request_id).
+        hotel_unique_id: UUID-style hotel unique ID from the itinerary
+            (hotels.legs[].id).
+        room_id: Optional room ID (hotels.legs[].room_details[0].id).
+        auth_token: Bearer token for authentication.
+        trip_id: Trip ID (e.g. '0653-1241') used to derive client-id header.
     """
-    endpoint = ENDPOINTS["hotel_static"].format(hotel_id=hotel_id)
-    url = f"{API_BASE_URL}{endpoint}"
-    data = await make_get_request(url)
+    if not auth_token:
+        auth_token = _config.get_user_access_token()
+    url = f"{HOTEL_STATIC_BASE_URL}{ENDPOINTS['hotel_room_details']}"
+    client_id = _client_id_from_trip(trip_id) if trip_id else ""
+    headers = {
+        "Authorization": f"Bearer {auth_token}",
+        "role": "traveler",
+        **({"client-id": client_id} if client_id else {}),
+    }
+    payload = {
+        "mode": "hotel",
+        "leg_details": {
+            "leg_info_id": leg_request_id,
+            "hotel_unique_id": hotel_unique_id,
+            "room_id": room_id,
+            "is_booked": True,
+        },
+    }
 
-    if not data:
-        return f"Unable to fetch details for hotel '{hotel_id}'."
+    data = await make_post_request(url, payload, headers=headers)
 
-    return str(data)
+    if not data or data.get("status_code") != 200:
+        return (
+            f"Unable to fetch static details for hotel leg"
+            f" '{leg_request_id}'."
+        )
+
+    static = data.get("response_data", {})
+    return _format_hotel_static(static)
+
+
+def _format_hotel_static(static: dict) -> str:
+    """Format hotel static details (amenities, photos, room info)."""
+    lines: list[str] = []
+
+    name = static.get("hotel_name", "")
+    if name:
+        lines.append(f"🏨 {name}")
+
+    # Property description
+    desc = static.get("property_description", "").strip()
+    if desc:
+        lines.append("\n📋 Description:")
+        words, buf = desc.split(), []
+        for word in words:
+            if sum(len(w) + 1 for w in buf) + len(word) > 72:
+                lines.append("   " + " ".join(buf))
+                buf = [word]
+            else:
+                buf.append(word)
+        if buf:
+            lines.append("   " + " ".join(buf))
+
+    # Check-in / check-out times
+    ci = static.get("check_in", "")
+    co = static.get("check_out", "")
+    if ci or co:
+        lines.append(
+            f"\n🕐 Check-in: {ci or 'N/A'}"
+            f"  |  Check-out: {co or 'N/A'}"
+        )
+
+    # Property-level amenities
+    prop_amenities = [
+        a.get("amenity_name", "")
+        for a in static.get("amenities", [])
+        if a.get("amenity_name")
+    ]
+    if prop_amenities:
+        lines.append("\n✨ Property Amenities:")
+        lines.append("   " + ", ".join(prop_amenities))
+
+    # Room details
+    rooms = static.get("room_details", [])
+    if rooms:
+        sr = rooms[0]
+        lines.append("\n🛏 Room Details:")
+
+        bedding = [
+            b.get("description", "")
+            for b in sr.get("bedding", [])
+            if b.get("description")
+        ]
+        if bedding:
+            lines.append(f"   Bedding      : {', '.join(bedding)}")
+
+        room_amenities = [
+            a.get("name", "") for a in sr.get("amenities", [])
+            if a.get("name")
+        ]
+        if room_amenities:
+            lines.append(
+                f"   Amenities    : {', '.join(room_amenities)}"
+            )
+
+        feats = [
+            f"A/C {'✅' if sr.get('is_ac') else '❌'}",
+            f"WiFi {'✅' if sr.get('is_wifi') else '❌'}",
+            f"TV {'✅' if sr.get('is_tv') else '❌'}",
+            f"Coffee {'✅' if sr.get('is_coffee') else '❌'}",
+            f"Parking {'✅' if sr.get('parking_available') else '❌'}",
+        ]
+        if sr.get("airport_transfer_available"):
+            feats.append("Airport Transfer ✅")
+        lines.append(f"   Features     : {' | '.join(feats)}")
+
+        sq_ft = sr.get("square_footage", 0)
+        if sq_ft:
+            lines.append(f"   Size         : {sq_ft} sq ft")
+
+        # Photos — all of them for an explicit detail request
+        photos = sr.get("photos", [])
+        if photos:
+            lines.append(f"\n📷 Photos ({len(photos)}):")
+            for p in photos:
+                lines.append(f"   {p}")
+
+    if not lines:
+        return "No static details available for this hotel."
+
+    return "\n".join(lines)
 
 
 async def cancel_hotel_booking(leg_request_id: str) -> str:

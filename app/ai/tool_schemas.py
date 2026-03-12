@@ -53,16 +53,51 @@ TOOL_SCHEMAS: list[dict] = [
     # },
     {
         "name": "get_hotel_details",
-        "description": "Get static details for a hotel by its ID.",
+        "description": (
+            "Get static details for a booked hotel — amenities, "
+            "description, room features, bedding, and photos. "
+            "Call get_trip_itinerary first to get the required IDs."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "hotel_id": {
+                "leg_request_id": {
                     "type": "string",
-                    "description": "The hotel's unique ID.",
+                    "description": (
+                        "24-char hex leg request ID from the itinerary "
+                        "(hotels.legs[].leg_request_id)."
+                    ),
+                },
+                "hotel_unique_id": {
+                    "type": "string",
+                    "description": (
+                        "UUID-style hotel unique ID from the itinerary "
+                        "(hotels.legs[].id)."
+                    ),
+                },
+                "room_id": {
+                    "type": "string",
+                    "description": (
+                        "Optional room ID "
+                        "(hotels.legs[].room_details[0].id)."
+                    ),
+                },
+                "auth_token": {
+                    "type": "string",
+                    "description": (
+                        "Bearer token for authentication. "
+                        "Pass the same token used for get_trip_itinerary."
+                    ),
+                },
+                "trip_id": {
+                    "type": "string",
+                    "description": (
+                        "Trip ID (e.g. '0653-1241'). Used to derive the "
+                        "client-id header required by the hotel details API."
+                    ),
                 },
             },
-            "required": ["hotel_id"],
+            "required": ["leg_request_id", "hotel_unique_id", "trip_id"],
         },
     },
     {
