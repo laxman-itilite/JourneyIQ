@@ -83,8 +83,9 @@ def _format_itinerary(data: dict) -> str:
     flights = data.get("flights", {})
     if flights.get("count", 0) > 0:
         lines += ["", f"✈️  FLIGHTS ({flights['count']})"]
-        for leg in flights.get("legs", []):
-            lines.append(f"   • {leg}")
+        for i, leg in enumerate(flights.get("legs", []), 1):
+            lines += ["", f"   {'─' * 44}"]
+            lines += _format_flight_leg(i, leg)
     else:
         lines += ["", "✈️  FLIGHTS: None"]
 
@@ -103,8 +104,142 @@ def _format_itinerary(data: dict) -> str:
         if count > 0:
             lines += ["", f"{icon} {mode.upper()}: {count} booking(s)"]
 
+    # ── Charge Summary ───────────────────────────────────────────────────────
+    charge = data.get("charge_summary", {})
+    breakups = charge.get("breakups", [])
+    if breakups:
+        ch_cur = charge.get("currency", "")
+        ch_total = charge.get("total", 0)
+        lines += [
+            "",
+            f"🧾 CHARGE SUMMARY"
+            f" (Total: {ch_cur} {ch_total:.2f})",
+        ]
+        for b in breakups:
+            title_b = b.get("title", "N/A")
+            total_b = b.get("total", 0) or 0
+            pmode = b.get("payment_mode") or "—"
+            pdate = b.get("payment_date") or "—"
+            lines += [
+                f"   • {title_b}",
+                f"     Amount  : {ch_cur} {total_b:.2f}"
+                f"  (base: {b.get('base_amount') or 0:.2f})",
+                f"     Payment : {pmode}  [{pdate}]",
+            ]
+            if b.get("confirmation_code"):
+                lines.append(
+                    f"     Conf #  : {b['confirmation_code']}"
+                )
+
     lines += ["", "═" * 50]
     return "\n".join(lines)
+
+
+def _format_flight_leg(i: int, leg: dict) -> list[str]:
+    lines: list[str] = []
+    frm = leg.get("from", {})
+    to = leg.get("to", {})
+    airline = leg.get("airline", {})
+    fare = leg.get("fare", {})
+    c = fare.get("currency", "")
+
+    # ── Basic Info ───────────────────────────────────────────────────────────
+    airline_str = (
+        f"{airline.get('name', 'N/A')}"
+        f" {airline.get('code', '')}{airline.get('number', '')}"
+    )
+    lines += [
+        f"   [{i}] {frm.get('iata', '?')} → {to.get('iata', '?')}"
+        f"  |  {airline_str}",
+        f"       Status       : {leg.get('status', 'N/A')}",
+        f"       PNR          : {leg.get('pnr', 'N/A')}",
+        f"       Booking ID   : {leg.get('booking_id', 'N/A')}",
+        f"       Trip Type    : {leg.get('trip_type', 'N/A')}",
+        f"       Travel Type  : {leg.get('travel_type', 'N/A')}",
+        f"       Vendor       : {leg.get('vendor', 'N/A')}",
+    ]
+
+    # ── Route ────────────────────────────────────────────────────────────────
+    lines += [
+        f"       Departure    : {frm.get('city', 'N/A')}"
+        f" ({frm.get('airport_name', '')},"
+        f" T{frm.get('terminal', '?')})"
+        f" @ {frm.get('departure_datetime', 'N/A')}",
+        f"       Arrival      : {to.get('city', 'N/A')}"
+        f" ({to.get('airport_name', '')},"
+        f" T{to.get('terminal', '?')})"
+        f" @ {to.get('arrival_datetime', 'N/A')}",
+        f"       Stops        : {leg.get('no_of_stops', 0)}",
+    ]
+
+    # ── Segments ─────────────────────────────────────────────────────────────
+    segments = leg.get("segments", [])
+    for seg in segments:
+        seg_airline = seg.get("airline", {})
+        seg_from = seg.get("from", {})
+        seg_to = seg.get("to", {})
+        baggage = seg.get("baggage", {})
+        lines += [
+            f"       Segment      :"
+            f" {seg_from.get('iata', '?')}"
+            f" → {seg_to.get('iata', '?')}"
+            f"  ({seg.get('duration', 'N/A')})",
+            f"         Cabin      : {seg.get('cabin_class', 'N/A')}",
+            f"         Fare Brand : {seg.get('brand_fare', 'N/A')}",
+            f"         Operator   :"
+            f" {seg_airline.get('operator', 'N/A')}",
+            f"         Cabin Bag  : {baggage.get('cabin', 'N/A')}",
+            f"         Check-in   : {baggage.get('checkin', 'N/A')}",
+        ]
+        # Per-pax ticket numbers
+        for pax in seg.get("pax_details", []):
+            ticket = pax.get("ticket_number")
+            pax_status = pax.get("status", "N/A")
+            if ticket:
+                lines.append(
+                    f"         Ticket #   : {ticket}"
+                    f"  ({pax_status})"
+                )
+
+    # ── Fare ─────────────────────────────────────────────────────────────────
+    total = fare.get("total_price", 0) or 0
+    base = fare.get("base_price", 0) or 0
+    tax = fare.get("tax", 0) or 0
+    lines.append(
+        f"       Fare         : {c} {total:.2f}"
+        f"  (base: {base:.2f}, tax: {tax:.2f})"
+    )
+
+    # ── Refundable & Policy ──────────────────────────────────────────────────
+    refundable = "Yes" if leg.get("refundable") == 1 else "No"
+    lines.append(f"       Refundable   : {refundable}")
+
+    policy = leg.get("policy", {})
+    if policy and policy.get("is_breached"):
+        amt = policy.get("breached_amount", 0)
+        pct = policy.get("breached_percent", 0)
+        lines.append(
+            f"       ⚠️  Policy    : Breached by"
+            f" {c} {amt:.2f} ({pct}%)"
+        )
+
+    # ── Cancellation ─────────────────────────────────────────────────────────
+    cancel = leg.get("cancellation_info", {})
+    if isinstance(cancel, dict) and cancel:
+        times = list(cancel.get("time", {}).items())
+        if times:
+            dl, charge = times[0]
+            lines.append(
+                f"       Cancel By    : {dl}"
+                f"  (charge: {cancel.get('currency', c)}"
+                f" {charge:.2f})"
+            )
+
+    # ── Voucher ──────────────────────────────────────────────────────────────
+    if leg.get("voucher_link"):
+        lines.append(f"       Voucher      : {leg['voucher_link']}")
+
+    return lines
 
 
 def _format_hotel_leg(i: int, leg: dict, trip_currency: str) -> list[str]:
