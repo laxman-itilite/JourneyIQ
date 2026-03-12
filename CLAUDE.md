@@ -103,6 +103,13 @@ User message
 
 ---
 
+## Knowledge Base
+
+Non-obvious API conventions, ID formats, required headers, and business rules:
+→ **`docs/knowledge_base.md`** — read this before touching any API integration.
+
+---
+
 ## Common Commands
 
 ```bash

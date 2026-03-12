@@ -92,4 +92,55 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["booking_id"],
         },
     },
+    {
+        "name": "get_flight_cancellation_details",
+        "description": "Get cancellation eligibility, refund estimates, and eligible legs for a trip's flight bookings. Use this before attempting any flight cancellation so the user can review charges and confirm.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "trip_id": {
+                    "type": "string",
+                    "description": "The trip ID (e.g. '0600-1241').",
+                },
+            },
+            "required": ["trip_id"],
+        },
+    },
+    {
+        "name": "submit_flight_cancellation",
+        "description": "Submit a flight cancellation request for specified legs. IMPORTANT: Only call this AFTER the user has reviewed cancellation details (from get_flight_cancellation_details) and explicitly confirmed they want to proceed.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "trip_id": {
+                    "type": "string",
+                    "description": "The trip ID (e.g. '0600-1241').",
+                },
+                "leg_request_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of leg_request_id values to cancel (from the cancellation details output).",
+                },
+            },
+            "required": ["trip_id", "leg_request_ids"],
+        },
+    },
+    {
+        "name": "get_flight_cancellation_status",
+        "description": "Check the status of a previously submitted flight cancellation request. Cancellations can take time to process, so use this to poll for updates.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "cancellation_request_id": {
+                    "type": "string",
+                    "description": "The cancellation request ID returned by submit_flight_cancellation.",
+                },
+                "trip_id": {
+                    "type": "string",
+                    "description": "The trip ID (e.g. '0600-1241').",
+                },
+            },
+            "required": ["cancellation_request_id", "trip_id"],
+        },
+    },
 ]

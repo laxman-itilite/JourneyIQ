@@ -31,6 +31,8 @@ ENDPOINTS = {
     "hotel_cancel": "/hotels/{booking_id}/cancel",
     "hotel_modify": "/hotels/{booking_id}/modify",
     "hotel_static": "/hotels/{hotel_id}",
+    "flight_cancellation_details": "/v1/trip-modify/cancellation-details",
+    "flight_cancellation_request": "/v1/trip-modify/cancellation-request",
 }
 
 def get_user_access_token() -> str:
