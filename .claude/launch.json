@@ -4,7 +4,7 @@
     {
       "name": "MCP Dev Server (itilite)",
       "runtimeExecutable": "mcp",
-      "runtimeArgs": ["dev", "mcp/server.py"],
+      "runtimeArgs": ["dev", "mcp_server/server.py"],
       "port": 6274
     }
   ]

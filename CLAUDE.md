@@ -7,7 +7,7 @@ Employees interact via a real-time Socket.IO chat interface. An AI assistant (Cl
 handles their travel requests — querying trips, managing bookings, checking weather,
 and more — via a set of domain tools.
 
-A parallel **FastMCP server** (`mcp/server.py`, named `"itilite"`) exposes the same tools
+A parallel **FastMCP server** (`mcp_server/server.py`, named `"itilite"`) exposes the same tools
 for direct Claude Code / Claude Desktop integration.
 
 ---
@@ -47,7 +47,7 @@ app/
 ├── main.py              FastAPI + Socket.IO ASGI app
 ├── models.py            Pydantic: Message, Session, ToolCall
 └── socket_manager.py    Socket.IO events; calls chat_turn() on each user message
-mcp/
+mcp_server/
 └── server.py            FastMCP("itilite") — registers tools from TOOL_REGISTRY
 main.py                  Uvicorn entrypoint (port 8000)
 ```
@@ -109,7 +109,7 @@ User message
 
 ```bash
 uv run python main.py          # start chat server on :8000
-mcp dev mcp/server.py          # start MCP dev inspector
+mcp dev mcp_server/server.py   # start MCP dev inspector
 uv add <package>               # add a dependency
 uv sync                        # install all declared dependencies
 curl http://localhost:8000/health   # health check
