@@ -236,4 +236,32 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["service_master_id", "cab_id"],
         },
     },
+    {
+        "name": "cancel_entire_trip",
+        "description": (
+            "Cancel ALL active legs of a trip — flights, hotels, and "
+            "rental cars — in a single operation. "
+            "Use this when the user explicitly asks to cancel their whole "
+            "trip or 'everything' on a trip. "
+            "Always call get_trip_itinerary first so you can show the user "
+            "what will be cancelled (flights, hotels, cars), present any "
+            "cancellation charges, and get explicit confirmation before "
+            "calling this tool. "
+            "Do NOT call individual cancel tools alongside this one — "
+            "this tool handles all modes concurrently."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "trip_id": {
+                    "type": "string",
+                    "description": (
+                        "The trip ID to cancel entirely "
+                        "(e.g. '0653-0070')."
+                    ),
+                },
+            },
+            "required": ["trip_id"],
+        },
+    },
 ]
