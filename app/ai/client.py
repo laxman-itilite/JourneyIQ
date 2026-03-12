@@ -1,14 +1,21 @@
 """Claude API client with tool-use loop.
 
 Entry point: chat_turn(session) — runs one full user turn, executing any
-tool calls Claude requests, and returns the final assistant text.
+tool calls Claude requests, and returns a structured response dict.
 """
+import json
 import anthropic
 
 from app.config import get_anthropic_api_key, CLAUDE_MODEL, CLAUDE_MAX_TOKENS, TOOL_USE_MAX_ITERATIONS
 from app.ai.prompts import SYSTEM_PROMPT
 from app.ai.tool_schemas import TOOL_SCHEMAS
 from app.tools.registry import dispatch
+
+_FALLBACK_RESPONSE = {
+    "content": "I was unable to complete that request. Please try again.",
+    "buttons": [],
+    "connect_to_human": False,
+}
 
 # Module-level lazy singleton — one HTTP connection pool per process
 _client: anthropic.AsyncAnthropic | None = None
@@ -31,11 +38,47 @@ def _build_messages(session) -> list[dict]:
     return [{"role": msg.role, "content": msg.content} for msg in session.messages]
 
 
-async def chat_turn(session) -> str:
+def _parse_response(raw_text: str) -> dict:
+    """Parse Claude's JSON response envelope.
+
+    Claude is instructed to always reply with a JSON object. This function
+    extracts the JSON (stripping any accidental markdown fences), then
+    validates the expected fields. Falls back gracefully if parsing fails.
+
+    Returns a dict with keys: content, buttons, connect_to_human.
+    """
+    text = raw_text.strip()
+    # Strip ```json ... ``` fences if Claude wraps the JSON
+    if text.startswith("```"):
+        lines = text.splitlines()
+        # Remove first and last fence lines
+        inner = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        text = inner.strip()
+
+    try:
+        data = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        # Claude replied with plain text instead of JSON — wrap it
+        return {
+            "content": raw_text,
+            "buttons": [],
+            "connect_to_human": False,
+        }
+
+    return {
+        "content": data.get("content", raw_text),
+        "buttons": data.get("buttons") or [],
+        "connect_to_human": bool(data.get("connect_to_human", False)),
+    }
+
+
+async def chat_turn(session) -> dict:
     """Run one full user turn through Claude, including the tool-use loop.
 
     Algorithm:
     1. Build message list from session history (all prior user+assistant turns).
+       Note: session messages store only the plain text from the `content` field so
+       Claude sees clean conversation history, not raw JSON envelopes.
     2. Call Claude with TOOL_SCHEMAS.
     3. If stop_reason == "tool_use":
        a. Collect all tool_use content blocks.
@@ -43,13 +86,13 @@ async def chat_turn(session) -> str:
        c. Append assistant turn (with tool_use blocks) to local message list.
        d. Append user turn (with tool_result blocks) to local message list.
        e. Re-call Claude (up to TOOL_USE_MAX_ITERATIONS).
-    4. When stop_reason == "end_turn": extract and return the text block.
+    4. When stop_reason == "end_turn": parse JSON envelope and return structured dict.
 
     Args:
         session: Session object with .messages list of Message objects.
 
     Returns:
-        Assistant reply as a plain string.
+        Structured dict with keys: content, buttons, connect_to_human.
     """
     client = _get_client()
     messages = _build_messages(session)
@@ -66,8 +109,8 @@ async def chat_turn(session) -> str:
         if response.stop_reason == "end_turn":
             for block in response.content:
                 if block.type == "text":
-                    return block.text
-            return ""
+                    return _parse_response(block.text)
+            return _FALLBACK_RESPONSE
 
         if response.stop_reason == "tool_use":
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
@@ -93,4 +136,4 @@ async def chat_turn(session) -> str:
         # Unexpected stop reason (max_tokens, stop_sequence, etc.)
         break
 
-    return "I was unable to complete that request. Please try again."
+    return _FALLBACK_RESPONSE

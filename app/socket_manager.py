@@ -81,20 +81,23 @@ async def send_message(sid: str, data: dict):
     session.messages.append(user_msg)
     await sio.emit("message", user_msg.model_dump(), room=session_id)
 
-    # --- AI hook: replace this block with your LLM call ---
-    assistant_content = await generate_reply(session)
-    # -------------------------------------------------------
+    # Call AI and get structured response envelope
+    reply = await generate_reply(session)
 
+    # Build assistant message — store only plain text in `content` so that
+    # session history fed back to Claude stays clean (no JSON envelopes).
     assistant_msg = Message(
         id=str(uuid.uuid4()),
         session_id=session_id,
         role="assistant",
-        content=assistant_content,
+        content=reply["content"],
+        buttons=reply.get("buttons") or [],
+        connect_to_human=reply.get("connect_to_human", False),
     )
     session.messages.append(assistant_msg)
     await sio.emit("message", assistant_msg.model_dump(), room=session_id)
 
 
-async def generate_reply(session: Session) -> str:
+async def generate_reply(session: Session) -> dict:
     from app.ai.client import chat_turn
     return await chat_turn(session)
