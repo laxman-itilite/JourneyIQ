@@ -1,5 +1,9 @@
 import sys
+import os
 import logging
+
+# Ensure the project root is on sys.path when run as a script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from mcp.server.fastmcp import FastMCP
 
