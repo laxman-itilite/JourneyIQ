@@ -1,9 +1,10 @@
+import asyncio
 import logging
 
 from mcp.server.fastmcp import FastMCP
 
-from config import API_BASE_URL, ENDPOINTS
-from services import make_get_request
+from config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
+from services import make_get_request, make_post_request
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,8 @@ def register_itinerary_tools(mcp: FastMCP) -> None:
     @mcp.tool()
     async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
         """Get the full itinerary for a specific trip including hotel,
-        flight, fare and traveller details.
+        flight, fare, traveller details, amenities, descriptions
+        and room photos.
 
         Args:
             trip_id: The unique trip identifier (e.g. "0600-0621")
@@ -29,7 +31,54 @@ def register_itinerary_tools(mcp: FastMCP) -> None:
             return f"Unable to fetch itinerary for trip '{trip_id}'."
 
         data = response.get("data", {})
+
+        # ── Enrich hotel legs with static data (parallel) ─────────────────
+        hotel_legs = data.get("hotels", {}).get("legs", [])
+        if hotel_legs:
+            static_results = await _fetch_all_hotel_static(
+                hotel_legs, auth_token
+            )
+            for leg, static in zip(hotel_legs, static_results):
+                leg["_static"] = static  # None if fetch failed
+
         return _format_itinerary(data)
+
+
+async def _fetch_all_hotel_static(
+    legs: list, auth_token: str
+) -> list[dict | None]:
+    """Fetch static hotel details for all legs concurrently."""
+    url = f"{HOTEL_STATIC_BASE_URL}{ENDPOINTS['hotel_room_details']}"
+    headers = {
+        "authorization": f"Bearer {auth_token}",
+        "content-type": "application/json",
+    }
+
+    async def _fetch_one(leg: dict) -> dict | None:
+        room_details = leg.get("room_details", [])
+        room_id = room_details[0].get("id", "") if room_details else ""
+        payload = {
+            "mode": "hotel",
+            "leg_details": {
+                "leg_info_id": leg.get("leg_request_id", ""),
+                "hotel_unique_id": leg.get("id", ""),
+                "room_id": room_id,
+                "is_booked": True,
+            },
+        }
+        try:
+            result = await make_post_request(
+                url, payload, headers=headers
+            )
+            if result and result.get("status_code") == 200:
+                return result.get("response_data")
+        except Exception as e:
+            logger.warning("Hotel static fetch failed: %s", e)
+        return None
+
+    return list(
+        await asyncio.gather(*[_fetch_one(leg) for leg in legs])
+    )
 
 
 def _format_itinerary(data: dict) -> str:
@@ -507,6 +556,103 @@ def _format_hotel_leg(i: int, leg: dict, trip_currency: str) -> list[str]:
             f"       ⚠️  Policy    : Breached by"
             f" {c} {amt:.2f} ({pct}%)"
         )
+
+    # ── Static Enrichment (amenities, description, photos) ───────────────────
+    static = leg.get("_static")
+    if static:
+        # Property description — word-wrapped at ~65 chars
+        desc = static.get("property_description", "").strip()
+        if desc:
+            lines.append("       Description  :")
+            words, buf = desc.split(), []
+            for word in words:
+                if sum(len(w) + 1 for w in buf) + len(word) > 65:
+                    lines.append("         " + " ".join(buf))
+                    buf = [word]
+                else:
+                    buf.append(word)
+            if buf:
+                lines.append("         " + " ".join(buf))
+
+        # Check-in / check-out times (from static, more precise)
+        ci_time = static.get("check_in", "")
+        co_time = static.get("check_out", "")
+        if ci_time or co_time:
+            lines.append(
+                f"       Check-in Time: {ci_time or 'N/A'}"
+                f"  |  Check-out: {co_time or 'N/A'}"
+            )
+
+        # Property-level amenities
+        prop_amenities = [
+            a.get("amenity_name", "")
+            for a in static.get("amenities", [])
+            if a.get("amenity_name")
+        ]
+        if prop_amenities:
+            lines.append(
+                f"       Prop Amenities: {', '.join(prop_amenities)}"
+            )
+
+        # Room static details
+        static_rooms = static.get("room_details", [])
+        if static_rooms:
+            sr = static_rooms[0]
+
+            # Bedding
+            bedding = [
+                b.get("description", "")
+                for b in sr.get("bedding", [])
+                if b.get("description")
+            ]
+            if bedding:
+                lines.append(
+                    f"       Bedding      : {', '.join(bedding)}"
+                )
+
+            # Room amenities
+            room_amenities = [
+                a.get("name", "")
+                for a in sr.get("amenities", [])
+                if a.get("name")
+            ]
+            if room_amenities:
+                lines.append(
+                    f"       Room Amenities: "
+                    f"{', '.join(room_amenities)}"
+                )
+
+            # Room feature quick-glance
+            feats = [
+                f"A/C {'✅' if sr.get('is_ac') else '❌'}",
+                f"WiFi {'✅' if sr.get('is_wifi') else '❌'}",
+                f"TV {'✅' if sr.get('is_tv') else '❌'}",
+                f"Coffee {'✅' if sr.get('is_coffee') else '❌'}",
+                f"Parking"
+                f" {'✅' if sr.get('parking_available') else '❌'}",
+            ]
+            if sr.get("airport_transfer_available"):
+                feats.append("Airport Transfer ✅")
+            lines.append(
+                f"       Room Features: {' | '.join(feats)}"
+            )
+
+            sq_ft = sr.get("square_footage", 0)
+            if sq_ft:
+                lines.append(
+                    f"       Size         : {sq_ft} sq ft"
+                )
+
+            # Photos — first 3 only
+            photos = sr.get("photos", [])
+            if photos:
+                shown = min(len(photos), 3)
+                lines.append(
+                    f"       Photos"
+                    f" ({shown}/{len(photos)}):"
+                )
+                for p in photos[:3]:
+                    lines.append(f"         {p}")
 
     # ── Voucher ──────────────────────────────────────────────────────────────
     if leg.get("voucher_link"):
