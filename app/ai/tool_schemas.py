@@ -15,25 +15,21 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["trip_id"],
         },
     },
-    {
-        "name": "get_trips_by_user",
-        "description": "List all trips for a user, optionally filtered by status.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "user_id": {
-                    "type": "string",
-                    "description": "The user's unique ID.",
-                },
-                "status": {
-                    "type": "string",
-                    "enum": ["upcoming", "ongoing", "completed", "cancelled"],
-                    "description": "Filter by trip status (optional).",
-                },
-            },
-            "required": ["user_id"],
-        },
-    },
+    # {
+    #     "name": "get_trips_by_user",
+    #     "description": "List all trips for the current user, optionally filtered by status.",
+    #     "input_schema": {
+    #         "type": "object",
+    #         "properties": {
+    #             "status": {
+    #                 "type": "string",
+    #                 "enum": ["upcoming", "ongoing", "completed", "cancelled"],
+    #                 "description": "Filter by trip status (optional).",
+    #             },
+    #         },
+    #         "required": [],
+    #     },
+    # },
     {
         "name": "get_hotel_details",
         "description": "Get static details for a hotel by its ID.",

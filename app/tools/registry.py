@@ -11,7 +11,7 @@ from .weather import get_weather_alerts, get_weather_forecast
 
 TOOL_REGISTRY: dict[str, Callable] = {
     "get_trip_itinerary": get_trip_itinerary,
-    "get_trips_by_user": get_trips_by_user,
+    # "get_trips_by_user": get_trips_by_user,
     "get_hotel_details": get_hotel_details,
     "cancel_hotel_booking": cancel_hotel_booking,
     "modify_hotel_booking": modify_hotel_booking,
