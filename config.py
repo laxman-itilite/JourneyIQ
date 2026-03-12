@@ -1,11 +1,11 @@
 # TODO: replace with actual base URL
-API_BASE_URL = "https://api.journeyiq.com"
+API_BASE_URL = "https://stream-api-qa.iltech.in"
 USER_AGENT = "JourneyIQ-MCP/1.0"
 REQUEST_TIMEOUT = 30.0
 
-# API Endpoints — update paths as APIs are confirmed
+# API Endpoints
 ENDPOINTS = {
-    "itinerary": "/trips/{trip_id}/itinerary",
+    "itinerary": "/api/v1/dashboard/itinerary/{trip_id}",
     "trips": "/trips",
     "hotel_cancel": "/hotels/{booking_id}/cancel",
     "hotel_modify": "/hotels/{booking_id}/modify",

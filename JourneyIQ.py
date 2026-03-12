@@ -14,14 +14,13 @@ from tools import (
 logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
 
 # ── MCP Server ───────────────────────────────────────────────────────────────
-mcp = FastMCP("itiliteMCP")
+mcp = FastMCP("JourneyIQ")
 
 # ── Register Tools ───────────────────────────────────────────────────────────
 register_itinerary_tools(mcp)
 register_hotel_tools(mcp)
 register_trip_tools(mcp)
 register_weather_tools(mcp)
-
 
 def main() -> None:
     mcp.run(transport="stdio")
