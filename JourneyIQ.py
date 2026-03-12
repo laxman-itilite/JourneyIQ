@@ -3,7 +3,7 @@ import sys
 
 from mcp.server.fastmcp import FastMCP
 
-from tools import (
+from app.tools import (
     register_hotel_tools,
     register_itinerary_tools,
     register_trip_tools,

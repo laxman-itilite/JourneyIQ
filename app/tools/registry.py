@@ -4,10 +4,10 @@ Maps Claude tool_use block names to their async handlers in tools/.
 """
 from collections.abc import Callable
 
-from tools.itinerary import get_trip_itinerary
-from tools.trips import get_trips_by_user
-from tools.hotels import get_hotel_details, cancel_hotel_booking, modify_hotel_booking
-from tools.weather import get_weather_alerts, get_weather_forecast
+from .itinerary import get_trip_itinerary
+from .trips import get_trips_by_user
+from .hotels import get_hotel_details, cancel_hotel_booking, modify_hotel_booking
+from .weather import get_weather_alerts, get_weather_forecast
 
 TOOL_REGISTRY: dict[str, Callable] = {
     "get_trip_itinerary": get_trip_itinerary,
