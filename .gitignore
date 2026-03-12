@@ -48,3 +48,5 @@ logs/
 .mypy_cache/
 .pyright/
 .ruff_cache/
+
+sample_req*
