@@ -13,10 +13,14 @@ from app.ai.tool_schemas import TOOL_SCHEMAS
 from app.tools.registry import dispatch
 
 _FALLBACK_RESPONSE = {
-    "content": "I was unable to complete that request. Please try again.",
-    "buttons": [],
+    "content": "I was unable to complete that request.",
+    "buttons": ["Try again"],
     "connect_to_human": False,
+    "tool_calls": [],
+    "summary": "",
 }
+
+_TOOL_OUTPUT_CONTEXT_LIMIT = 4096
 
 # Module-level lazy singleton — one HTTP connection pool per process
 _client: anthropic.AsyncAnthropic | None = None
@@ -32,11 +36,29 @@ def _get_client() -> anthropic.AsyncAnthropic:
 def _build_messages(session) -> list[dict]:
     """Convert Session.messages to Anthropic API message format.
 
-    Only user/assistant text turns are stored in the session (tool call turns
-    are ephemeral within a single chat_turn invocation). This keeps session
-    storage simple while still giving Claude the full conversation history.
+    For assistant messages that have tool_calls, a [Tool Context] block is
+    appended so Claude can see what data was fetched in prior turns without
+    needing to re-call tools.
     """
-    return [{"role": msg.role, "content": msg.content} for msg in session.messages]
+    result = []
+    for msg in session.messages:
+        content = msg.content
+        if msg.role == "assistant" and msg.tool_calls:
+            content = _append_tool_context(content, msg.tool_calls)
+        result.append({"role": msg.role, "content": content})
+    return result
+
+
+def _append_tool_context(content: str, tool_calls: list) -> str:
+    """Append a [Tool Context] summary to assistant message content."""
+    lines = [content, "", "[Tool Context from this turn]"]
+    for tc in tool_calls:
+        input_str = json.dumps(tc.input, separators=(",", ":"))
+        output = tc.output or ""
+        if len(output) > _TOOL_OUTPUT_CONTEXT_LIMIT:
+            output = output[:_TOOL_OUTPUT_CONTEXT_LIMIT - 20] + "\n... [truncated]"
+        lines.append(f"- {tc.name}({input_str}): {output}")
+    return "\n".join(lines)
 
 
 def _parse_response(raw_text: str) -> dict:
@@ -86,6 +108,7 @@ def _parse_response(raw_text: str) -> dict:
         "content": raw_text,
         "buttons": [],
         "connect_to_human": False,
+        "summary": "",
     }
 
 
@@ -112,6 +135,7 @@ def _extract_fields(data: dict, raw_text: str) -> dict:
         "content": data.get("content", raw_text),
         "buttons": data.get("buttons") or [],
         "connect_to_human": bool(data.get("connect_to_human", False)),
+        "summary": data.get("summary") or "",
     }
 
 
@@ -135,10 +159,11 @@ async def chat_turn(session) -> dict:
         session: Session object with .messages list of Message objects.
 
     Returns:
-        Structured dict with keys: content, buttons, connect_to_human.
+        Structured dict with keys: content, buttons, connect_to_human, tool_calls.
     """
     client = _get_client()
     messages = _build_messages(session)
+    collected_tool_calls: list[dict] = []
 
     for _ in range(TOOL_USE_MAX_ITERATIONS):
         response = await client.messages.create(
@@ -152,8 +177,12 @@ async def chat_turn(session) -> dict:
         if response.stop_reason == "end_turn":
             for block in response.content:
                 if block.type == "text":
-                    return _parse_response(block.text)
-            return _FALLBACK_RESPONSE
+                    parsed = _parse_response(block.text)
+                    parsed["tool_calls"] = collected_tool_calls
+                    return parsed
+            fallback = dict(_FALLBACK_RESPONSE)
+            fallback["tool_calls"] = collected_tool_calls
+            return fallback
 
         if response.stop_reason == "tool_use":
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
@@ -170,6 +199,12 @@ async def chat_turn(session) -> dict:
                     "type": "tool_result",
                     "tool_use_id": tool_use.id,
                     "content": result_text,
+                })
+                collected_tool_calls.append({
+                    "id": tool_use.id,
+                    "name": tool_use.name,
+                    "input": tool_use.input,
+                    "output": result_text,
                 })
 
             # Append tool results as a user turn

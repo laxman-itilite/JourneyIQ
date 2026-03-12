@@ -1,9 +1,16 @@
 import socketio
 import uuid
 import logging
-from .models import Message, Session
+from .models import Message, Session, ToolCall
 
 logger = logging.getLogger(__name__)
+
+
+def _truncate(text: str, max_chars: int = 4096) -> str:
+    """Truncate text to max_chars, appending a marker if truncated."""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars - 20] + "\n... [truncated]"
 
 sio = socketio.AsyncServer(
     async_mode="asgi",
@@ -84,15 +91,29 @@ async def send_message(sid: str, data: dict):
     # Call AI and get structured response envelope
     reply = await generate_reply(session)
 
-    # Build assistant message — store only plain text in `content` so that
-    # session history fed back to Claude stays clean (no JSON envelopes).
+    # Convert raw tool call dicts to ToolCall models (truncate outputs)
+    raw_tool_calls = reply.get("tool_calls") or []
+    tool_call_models = [
+        ToolCall(
+            id=tc["id"],
+            name=tc["name"],
+            input=tc["input"],
+            output=_truncate(tc.get("output") or ""),
+        )
+        for tc in raw_tool_calls
+    ]
+
+    # Build assistant message — store plain text in `content` (no JSON envelopes)
+    # and tool_calls for context on follow-up turns.
     assistant_msg = Message(
         id=str(uuid.uuid4()),
         session_id=session_id,
         role="assistant",
         content=reply["content"],
+        tool_calls=tool_call_models,
         buttons=reply.get("buttons") or [],
         connect_to_human=reply.get("connect_to_human", False),
+        summary=reply.get("summary") or "",
     )
     session.messages.append(assistant_msg)
     await sio.emit("message", assistant_msg.model_dump(), room=session_id)

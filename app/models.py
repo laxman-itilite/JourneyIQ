@@ -19,6 +19,7 @@ class Message(BaseModel):
     tool_calls: list[ToolCall] = []
     buttons: list[str] = []
     connect_to_human: bool = False
+    summary: str = ""
 
     def model_post_init(self, __context):
         if not self.timestamp:
