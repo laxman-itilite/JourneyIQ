@@ -3,7 +3,7 @@ from typing import Any
 
 import httpx
 
-from config import REQUEST_TIMEOUT, USER_AGENT
+from app.config import REQUEST_TIMEOUT, USER_AGENT
 
 logger = logging.getLogger(__name__)
 

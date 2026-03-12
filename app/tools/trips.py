@@ -1,7 +1,7 @@
 import logging
 
-from config import API_BASE_URL, ENDPOINTS
-from services import make_get_request
+from app.config import API_BASE_URL, ENDPOINTS
+from app.services import make_get_request
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,3 @@ async def get_trips_by_user(user_id: str, status: str = "") -> str:
 
     return str(data)
 
-
-def register_trip_tools(mcp) -> None:
-    """Register all trip-related tools."""
-    mcp.tool()(get_trips_by_user)

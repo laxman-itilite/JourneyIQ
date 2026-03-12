@@ -1,6 +1,6 @@
 import logging
 
-from services import make_get_request
+from app.services import make_get_request
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +58,6 @@ async def get_weather_forecast(latitude: float, longitude: float) -> str:
         )
 
     return "\n---\n".join(forecasts)
-
-
-def register_weather_tools(mcp) -> None:
-    """Register all weather-related tools."""
-    mcp.tool()(get_weather_alerts)
-    mcp.tool()(get_weather_forecast)
 
 
 def _format_alert(feature: dict) -> str:

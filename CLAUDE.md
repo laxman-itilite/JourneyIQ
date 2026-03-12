@@ -4,8 +4,8 @@
 
 JourneyIQ is the AI-powered chat backend for the **Itilite corporate travel platform**.
 Employees interact via a real-time Socket.IO chat interface. An AI assistant (Claude claude-sonnet-4-6)
-handles their travel requests — querying trips, managing bookings, checking cancellations,
-answering policy questions, and searching the FAQ — via a set of domain tools.
+handles their travel requests — querying trips, managing bookings, checking weather,
+and more — via a set of domain tools.
 
 A parallel **FastMCP server** (`mcp/server.py`, named `"itilite"`) exposes the same tools
 for direct Claude Code / Claude Desktop integration.
@@ -35,25 +35,25 @@ app/
 │   ├── prompts.py       SYSTEM_PROMPT for the travel assistant persona
 │   └── tool_schemas.py  Tool definitions in Anthropic SDK format
 ├── tools/
-│   ├── registry.py      dispatch(tool_name, input) — routes Claude tool calls to handlers
-│   ├── trips.py         get_trips, get_trip_details
-│   ├── bookings.py      create_booking, get_booking
-│   ├── cancellations.py cancel_booking
-│   ├── policy.py        get_travel_policy, check_policy_compliance
-│   ├── faq.py           search_faq
-│   ├── expenses.py      get_expense_report
-│   └── approvals.py     get_approval_status
-├── config.py            Settings — loads .env, exposes ANTHROPIC_API_KEY
+│   ├── __init__.py      exports TOOL_REGISTRY, dispatch
+│   ├── registry.py      TOOL_REGISTRY dict + dispatch(tool_name, input)
+│   ├── itinerary.py     get_trip_itinerary
+│   ├── trips.py         get_trips_by_user
+│   ├── hotels.py        get_hotel_details, cancel_hotel_booking, modify_hotel_booking
+│   └── weather.py       get_weather_alerts, get_weather_forecast
+├── services/
+│   └── http_client.py   make_get_request, make_post_request, make_put_request
+├── config.py            All settings — Anthropic API key, Claude model, Itilite API URLs
 ├── main.py              FastAPI + Socket.IO ASGI app
 ├── models.py            Pydantic: Message, Session, ToolCall
 └── socket_manager.py    Socket.IO events; calls chat_turn() on each user message
 mcp/
-└── server.py            FastMCP("itilite") — wraps app/tools/ handlers for MCP surface
+└── server.py            FastMCP("itilite") — registers tools from TOOL_REGISTRY
 main.py                  Uvicorn entrypoint (port 8000)
 ```
 
-**Single source of truth for tool logic:** `app/tools/` handlers are imported by both
-`app/ai/client.py` (for the chat backend) and `mcp/server.py` (for the MCP server).
+**Single source of truth for tool logic:** `app/tools/` handlers are used by both
+`app/ai/client.py` (via `dispatch`) and `mcp/server.py` (via `TOOL_REGISTRY`).
 Tool schemas for the Anthropic API live in `app/ai/tool_schemas.py`.
 
 ---
@@ -77,16 +77,13 @@ User message
 
 | Name | Module | Description |
 |---|---|---|
-| `get_trips` | trips.py | List upcoming/past trips for employee |
-| `get_trip_details` | trips.py | Full itinerary for a trip |
-| `create_booking` | bookings.py | Book flight/hotel/car on a trip |
-| `get_booking` | bookings.py | Booking status and details |
-| `cancel_booking` | cancellations.py | Cancel a booking, get refund estimate |
-| `get_travel_policy` | policy.py | Company policy rules by category |
-| `check_policy_compliance` | policy.py | Validate booking against policy |
-| `search_faq` | faq.py | Search Itilite FAQ |
-| `get_expense_report` | expenses.py | Expense reports for a trip |
-| `get_approval_status` | approvals.py | Approval workflow status |
+| `get_trip_itinerary` | itinerary.py | Full itinerary for a trip — flights, hotels, fare, traveller, amenities |
+| `get_trips_by_user` | trips.py | List trips for a user, filterable by status |
+| `get_hotel_details` | hotels.py | Static details for a hotel |
+| `cancel_hotel_booking` | hotels.py | Cancel a hotel booking |
+| `modify_hotel_booking` | hotels.py | Modify dates, room type, or special requests |
+| `get_weather_alerts` | weather.py | Active NWS weather alerts for a US state |
+| `get_weather_forecast` | weather.py | 5-period weather forecast by lat/lon |
 
 ---
 
@@ -101,11 +98,10 @@ User message
 
 ## Current Status / Known Gaps
 
-- [ ] **Tools are stubs** — replace stub return values with real Itilite API calls
 - [ ] **Session storage is in-memory** — replace `sessions` dict with Redis or DB
 - [ ] **No auth on Socket.IO** — add JWT validation in the `connect` event handler
 - [ ] **No streaming** — `chat_turn()` returns complete text; add streaming for UX
-- [ ] **Employee/company context** — currently hardcoded in stubs; should come from auth token
+- [ ] **Employee/company context** — should come from auth token, not be passed by Claude
 
 ---
 

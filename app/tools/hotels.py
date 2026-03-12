@@ -1,7 +1,7 @@
 import logging
 
-from config import API_BASE_URL, ENDPOINTS
-from services import make_get_request, make_post_request, make_put_request
+from app.config import API_BASE_URL, ENDPOINTS
+from app.services import make_get_request, make_post_request, make_put_request
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +78,3 @@ async def modify_hotel_booking(
 
     return str(data)
 
-
-def register_hotel_tools(mcp) -> None:
-    """Register all hotel-related tools."""
-    mcp.tool()(get_hotel_details)
-    mcp.tool()(cancel_hotel_booking)
-    mcp.tool()(modify_hotel_booking)

@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-from config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
-from services import make_get_request, make_post_request
+from app.config import API_BASE_URL, HOTEL_STATIC_BASE_URL, ENDPOINTS
+from app.services import make_get_request, make_post_request
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,6 @@ async def get_trip_itinerary(trip_id: str, auth_token: str) -> str:
             leg["_static"] = static  # None if fetch failed
 
     return _format_itinerary(data)
-
-
-def register_itinerary_tools(mcp) -> None:
-    """Register all itinerary-related tools."""
-    mcp.tool()(get_trip_itinerary)
 
 
 async def _fetch_all_hotel_static(
