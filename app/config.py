@@ -59,6 +59,7 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "support-itilite@yopmail.com")
+SUPPORT_CC = os.environ.get("SUPPORT_CC", "stagingtriprequest@itilite.com")
 
 
 def get_current_user_id() -> str:

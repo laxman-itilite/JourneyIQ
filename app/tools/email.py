@@ -6,7 +6,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from app.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SUPPORT_EMAIL
+from app.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SUPPORT_EMAIL, SUPPORT_CC
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +155,8 @@ def _send_smtp(to: str, subject: str, user_id: str, summary: str, messages: list
     msg["Subject"] = subject
     msg["From"] = SMTP_USER
     msg["To"] = to
+    if SUPPORT_CC:
+        msg["Cc"] = SUPPORT_CC
 
     history_plain = _build_history_plain(messages) if messages else ""
     plain = (
@@ -174,7 +176,8 @@ def _send_smtp(to: str, subject: str, user_id: str, summary: str, messages: list
             server.starttls()
         if SMTP_USER and SMTP_PASSWORD:
             server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, [to], msg.as_string())
+        recipients = [to] + ([SUPPORT_CC] if SUPPORT_CC else [])
+        server.sendmail(SMTP_USER, recipients, msg.as_string())
 
 
 async def send_support_email(user_id: str, summary: str, messages: list | None = None, request_type: str = "support") -> bool:
