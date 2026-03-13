@@ -113,10 +113,22 @@ async def send_message(sid: str, data: dict):
         tool_calls=tool_call_models,
         buttons=reply.get("buttons") or [],
         connect_to_human=reply.get("connect_to_human", False),
+        modification_requested=reply.get("modification_requested", False),
         summary=reply.get("summary") or "",
     )
     session.messages.append(assistant_msg)
     await sio.emit("message", assistant_msg.model_dump(), room=session_id)
+
+    if assistant_msg.connect_to_human or assistant_msg.modification_requested:
+        from app.tools.email import send_support_email
+        from app.config import get_current_user_id
+        request_type = "modification" if assistant_msg.modification_requested else "support"
+        await send_support_email(
+            user_id=get_current_user_id(),
+            summary=assistant_msg.summary,
+            messages=session.messages,
+            request_type=request_type,
+        )
 
 
 async def generate_reply(session: Session) -> dict:

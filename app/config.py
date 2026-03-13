@@ -50,6 +50,16 @@ def get_user_access_token() -> str:
     # env = dotenv_values()
     # return env.get("USER_ACCESS_TOKEN") or os.environ.get("USER_ACCESS_TOKEN", "")
     return "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczNDU0OTI5LCJqdGkiOiJmZjdlM2NhOWQ4NzA0YjUxYTc3NGU4MDg5N2IyNjQ5YSIsInVzZXJfaWQiOiJweXRob253YWxsQHlvcG1haWwuY29tIn0.c3yu7VdZJL38yR1-ehcggVVY0yYPJhSgkpzd4djXU_qe2X-I4ndK8OU8YiVvR7G766y2mJIyIVc6my6q-8POOEZNuBPkocjKIixkFd8a1TyYrzfyOpR8QOpaZOrqeg389JlNKRP-tDjgBSF8DY9g0oyf7m4NajcOhwk5wpw8xuQSJ-KAGX5ipR6ZN1xtJPF0FJXkPM_JF_he4rHsNU84oH5aguTMa4T6GFUdxz8kWEKrvcg-K_ikE1A4b1DKKqpyhNNC7aK9-X4iimh9sKnaDEbjBTmHC3cBs5zBS7ZppL2cQ9fbUAOJKBUfNb2L8js1M451Z2uev0GsW7QzVAJ4LeRDAWoF_11c2e6DGMcyqwOYcXPg1PmSSfq9mkbhpBWvJeeSxHuduxmfOQpcES58rhFpfUPlzcTIha92nc6zqns9oKegzNGbqK8bfk2boOTAW8o38M617Z0XrvV8DOTvec0QfCuvh3SltUTcCRNMj1GRUIxOuy5iRqjNjZa2nseF1Qx33GHHt-EIYHwE6bQQfnByJsBPpkFwJKxn_jN2JS1J0OYX6qi5ka7ZNN9TMEvlx7-PnALK0plj4k9Tvtq76wVtBCPnEnNRh6W6iTe2fNNPxfVfseToDR8xFvldiXE-66cYJd6cyeDevP-eaEi3_Vzt0ZAagHttkL7jilLZUyM"
+    # return "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczNDk5MTQyLCJqdGkiOiJkNTVkZWQyZjJmYzY0MTgwOWU2YmU1YThiYWNjZDgwNyIsInVzZXJfaWQiOiJGaWx1c0B5b3BtYWlsLmNvbSJ9.GkD7ujiiacesHXO8FhHk5AOeH7Xafd5CbTe9feUsCKMsjC0sYozRNbvz3b63u3PlQNn42WSxHBVNQlIzOjABqffVmBLZPwzN6L-KZcJmO9fvQv7dqT7h_L1rENcTuci5IefdaYjNtDkqNZjzAAA4UzGfHF0Uw-fVbUhi9E80flOxX7ivZ8WEqbRD7Ts85CuAtbz_SlaXLVPg0MsY3XyBmdwfl8n5CHY1pbUO6StoU7QAxe7H0ZMbOyKIHD2UBsL4hJxFjS01gbNWirvZVPJc4m5zm60eRdGvytfG1swl7rl9GLwlbTZpbgfp8C844m_2st4z_lYnH9ECFmK6Er2j0PANuvy3H0Vh4iR4PveaK33H8Gcdk4A3OTSNl4yc6mMe_SKNLck3_mJcdKqu2FjIBHUHsshei3I4TnvXEFBaS3suK3qlPGPHyTbPNgeaXx34aiA8N94STuwtrpdeHTfpniPAarZ7CS9llgSTIjno0OesKVkDVwl6N1VcYsCx_zmcZh36-qncsyDWf6TgnRSQyV1WWjh1J0bOvuXYhyKqP473GAEIiE5pYSi5gJh-Aqfx2df5rPDNqJGrCs_iLtXJ-fztNYY3bGAh8k2iwusGYZP6CJY-mkTmTtELD2JbdHfQEaOp77fZFHhaiGVKPSRW9Ns_aa7wsxCz3wrJSFD6Xd8"
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "support-itilite@yopmail.com")
+
 
 def get_current_user_id() -> str:
     """Decode the JWT access token and return the user_id claim."""

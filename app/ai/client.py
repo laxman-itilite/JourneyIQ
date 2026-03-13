@@ -16,6 +16,7 @@ _FALLBACK_RESPONSE = {
     "content": "I was unable to complete that request.",
     "buttons": ["Try again"],
     "connect_to_human": False,
+    "modification_requested": False,
     "tool_calls": [],
     "summary": "",
 }
@@ -108,6 +109,7 @@ def _parse_response(raw_text: str) -> dict:
         "content": raw_text,
         "buttons": [],
         "connect_to_human": False,
+        "modification_requested": False,
         "summary": "",
     }
 
@@ -135,6 +137,7 @@ def _extract_fields(data: dict, raw_text: str) -> dict:
         "content": data.get("content", raw_text),
         "buttons": data.get("buttons") or [],
         "connect_to_human": bool(data.get("connect_to_human", False)),
+        "modification_requested": bool(data.get("modification_requested", False)),
         "summary": data.get("summary") or "",
     }
 
